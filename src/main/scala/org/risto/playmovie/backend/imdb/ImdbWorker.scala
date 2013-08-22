@@ -22,7 +22,7 @@ object ImdbProtocol {
 
   case class ImdbResult(title: String, rating: Double, year: Int)
 
-  case class ImdbResponse(result: List[ImdbResult])
+  case class ImdbResponse(result: Option[List[ImdbResult]], code: Option[Int] = None)
 
   case class ImdbQuery(query: String)
 
@@ -33,7 +33,7 @@ import org.risto.playmovie.backend.imdb.ImdbProtocol._
 object ImdbJsonProtocol extends DefaultJsonProtocol {
 
   implicit val resultFormat = jsonFormat3(ImdbResult)
-  implicit val responseFormat = jsonFormat1(ImdbResponse)
+  implicit val responseFormat = jsonFormat2(ImdbResponse)
 }
 
 import org.risto.playmovie.backend.imdb.ImdbJsonProtocol._

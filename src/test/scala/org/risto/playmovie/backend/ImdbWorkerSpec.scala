@@ -26,12 +26,12 @@ class ImdbWorkerSpec extends TestKit(ActorSystem
   it should "return correct information on query 'Blade Runner'" in {
     val imdbWorker = system.actorOf(Props(new ImdbWorker))
     imdbWorker ! ImdbQuery("Blade Runner")
-    expectMsg(5 seconds, ImdbResponse(List(ImdbResult("Blade Runner", 8.3, 1982))))
+    expectMsg(5 seconds, ImdbResponse(Some(List(ImdbResult("Blade Runner", 8.3, 1982)))))
   }
 
-  it should "return a NotFound result on query 'foobar'" in {
+  it should "return a 404 result on query 'foobar'" in {
     val imdbWorker = system.actorOf(Props(new ImdbWorker))
     imdbWorker ! ImdbQuery("foobar")
-    expectMsg(5 seconds, ImdbResponse(List(ImdbResult("Blade Runner", 8.3, 1982))))
+    expectMsg(5 seconds, ImdbResponse(None, Some(404)))
   }
 }
