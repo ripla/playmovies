@@ -2,6 +2,13 @@ package org.risto.playmovie.backend
 
 import akka.actor.{PoisonPill, Props, ActorRef, Actor}
 import org.risto.playmovie.backend.QueryMasterProtocol.{RemoveSupervisor, AddSupervisor}
+import org.risto.playmovie.backend.QueryProtocol.QueryResult
+import akka.pattern.ask
+import scala.concurrent.duration._
+import akka.util.Timeout
+import akka.dispatch.Futures
+import akka.pattern.pipe
+import scala.concurrent.Future
 
 /**
  * Created with IntelliJ IDEA.
@@ -19,8 +26,18 @@ class QueryMaster(initialSupervisors: List[(String, Props)] = List.empty) extend
     case (id: String, props: Props) => context.actorOf(props, id)
   }
 
+
   def receive = {
-    case query: QueryProtocol.Query => supervisors foreach (supervisor => supervisor.forward(query))
+    case query: QueryProtocol.Query => {
+      implicit val system = context.system
+      import system.dispatcher
+      implicit val queryTimeout = Timeout(5 seconds)
+
+      val resultListFuture: Future[Iterable[QueryResult]] = Future
+        .sequence(supervisors.map(supervisor => (supervisor ? query).mapTo[QueryResult]))
+      resultListFuture pipeTo sender
+    }
+
     case AddSupervisor(id, props) => supervisors = context.actorOf(props, id) :: supervisors
     case RemoveSupervisor(id) => context.child(id) foreach {
       child =>

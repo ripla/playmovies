@@ -1,15 +1,22 @@
 package org.risto.playmovie.backend
 
 /**
- * Created with IntelliJ IDEA.
- * User: ripla
+ * Message protocol for movie queries
+ *
+ * User: Risto Yrjänä
  * Date: 16.8.2013
  * Time: 19.51
- * To change this template use File | Settings | File Templates.
  */
 object QueryProtocol {
 
   case class Query(query: String)
 
-  case class QueryResult(name:String, year:String, rating:Rating)
+  abstract class QueryResult
+
+  final case class Success(name: String, year: String, rating: Rating, service: String) extends QueryResult
+
+  case object NotFound extends QueryResult
+
+  case object NotAvailable extends QueryResult
+
 }

@@ -8,21 +8,20 @@ import org.risto.playmovie.backend.QueryMasterProtocol.{RemoveSupervisor, AddSup
 
 
 /**
- * Created with IntelliJ IDEA.
- * User: ripla
+ * User: Risto Yrjänä
  * Date: 8.8.2013
  * Time: 23.17
- * To change this template use File | Settings | File Templates.
  */
-class QueryMasterSpec extends TestKit(ActorSystem.create("QueryMasterSpec")) with FlatSpec with BeforeAndAfterAll with ImplicitSender {
+class QueryMasterSpec extends TestKit(ActorSystem
+  .create("QueryMasterSpec")) with FlatSpec with BeforeAndAfterAll with ImplicitSender {
 
-  override def afterAll = {
+  override def afterAll() = {
     system.shutdown()
   }
 
   class EchoActor extends Actor {
     def receive = {
-      case msg => sender ! "Echo"
+      case msg => sender ! QueryProtocol.NotFound
     }
   }
 
@@ -51,7 +50,7 @@ class QueryMasterSpec extends TestKit(ActorSystem.create("QueryMasterSpec")) wit
     val queryMaster = system.actorOf(Props(new QueryMaster(queryMasterParams)))
 
     queryMaster ! Query("test")
-    expectMsg("Echo")
+    expectMsg(List(QueryProtocol.NotFound))
   }
 
   it should "allow adding supervisors with messages" in {

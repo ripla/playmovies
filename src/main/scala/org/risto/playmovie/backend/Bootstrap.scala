@@ -18,7 +18,8 @@ class Bootstrap extends Bootable {
     //TODO read config
     //TODO get actors from config
 
-    val querySupervisors = List(("imdb", Props(new ImdbSupervisor())))
+    val querySupervisors = List(ImdbSupervisor.getProps)
+
     system.actorOf(Props(new QueryMaster(querySupervisors)))
 
   }
