@@ -1,6 +1,8 @@
 import sbt._
 import Keys._
 import com.typesafe.sbt.SbtStartScript
+import akka.sbt.AkkaKernelPlugin
+import akka.sbt.AkkaKernelPlugin.{Dist, outputDirectory, distJvmOptions}
 
 object BuildSettings {
     import Dependencies._
@@ -13,9 +15,10 @@ object BuildSettings {
     scalacOptions ++= Seq("-encoding", "UTF-8",
                           "-deprecation", "-unchecked"),
     fork in test := true,
-    libraryDependencies ++= Seq(Test.slf4jSimple, Test.scalatest, Test.jettyServer),
-    resolvers := Seq(scalaToolsSnapshots, jboss, akka, sonatypeOss))
-  
+    libraryDependencies ++= Seq(Test.scalatest),
+    resolvers := Seq(scalaToolsSnapshots, jboss, akka, sonatypeOss, sprayRepo, sprayNightly)
+  )
+
 
     val projectSettings = Defaults.defaultSettings ++ buildSettings
 }
@@ -37,8 +40,7 @@ object Dependencies {
   object V {
     val Scalatest = "1.9.1"
     val Akka = "2.2.0"
-    val Spray = "1.2-20130710"
-    //nightly required for Akka 2.2 comp
+    val Spray = "1.2-20131004"     //nightly required for Akka 2.2 compatibility
     val SprayJson = "1.2.5"
     val ScalaUri = "0.3.6"
     val Jetty = "7.4.0.v20110414"
@@ -76,22 +78,25 @@ object PlayMoviesBuild extends Build {
     lazy val root = Project("playmovies",
                             file("."),
                             settings = projectSettings ++
-                            Seq(SbtStartScript.stage in Compile := Unit)) aggregate(common, web, backend)
+                              Seq(SbtStartScript.stage in Compile := Unit)) aggregate(common, web, backend)
 
-    lazy val web = Project("playmovies-web",
+    lazy val web = Project("web",
                             file("web"),
                             settings = projectSettings ++
-                            SbtStartScript.startScriptForClassesSettings ++
-                            Seq(libraryDependencies ++= Seq(jettyServer, jettyServlet, slf4j))) dependsOn(common % "compile->compile;test->test")
+                              SbtStartScript.startScriptForClassesSettings ++
+                              Seq(libraryDependencies ++= Seq(jettyServer, jettyServlet, slf4j),
+                                distJvmOptions in Dist := "-Xms256M -Xmx1024M",
+                                outputDirectory in Dist := file("target/playmovieDist"))) dependsOn(common % "compile->compile;test->test")
 
-    lazy val backend = Project("playmovies-backend",
+    lazy val backend = Project("backend",
                             file("backend"),
                             settings = projectSettings ++
-                            SbtStartScript.startScriptForClassesSettings ++
-                            Seq(libraryDependencies ++= Seq(Test.slf4jSimple))) dependsOn(common % "compile->compile;test->test")
+                              SbtStartScript.startScriptForClassesSettings ++
+                              AkkaKernelPlugin.distSettings ++
+                              Seq(libraryDependencies ++= Seq(akkaActor,akkaKernel,sprayClient,sprayJson,scalaUri,Test.junit,Test.scalatest,Test.akkaTestKit))) dependsOn(common % "compile->compile;test->test")
 
-    lazy val common = Project("playmovies-common",
+    lazy val common = Project("common",
                             file("common"),
                             settings = projectSettings ++
-                            Seq(libraryDependencies ++= Seq(akkaActor)))
+                              Seq(libraryDependencies ++= Seq()))
 }

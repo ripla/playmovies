@@ -70,7 +70,7 @@ class ImdbWorker extends Actor with ActorLogging {
   */
 
   val mapEntityContentTypeToJson: HttpResponse => HttpResponse = response =>
-    response.withEntity(HttpEntity(`application/json`, response.entity.buffer))
+    response.withEntity(HttpEntity(`application/json`, response.entity.data))
 
   val pipeline: HttpRequest => Future[ImdbResponse] = sendReceive ~>
     mapEntityContentTypeToJson ~>
