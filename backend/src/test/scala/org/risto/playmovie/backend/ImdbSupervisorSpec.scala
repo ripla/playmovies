@@ -1,18 +1,18 @@
 package org.risto.playmovie.backend
 
-import akka.actor.{ActorRef, Props, ActorSystem}
+import akka.actor.{ActorSystem, ActorRef, Props}
 import akka.testkit.{TestActor, TestProbe, TestActorRef, TestKit}
 import org.risto.playmovie.backend.imdb.ImdbSupervisor
-import scala.io.Source
 import org.risto.playmovie.backend.imdb.ImdbProtocol.{ImdbResponse, ImdbResult, ImdbQuery}
 import akka.testkit.TestActor.AutoPilot
+import org.risto.playmovie.test.PlayMovieSpec
 
 /**
  * User: Risto Yrjänä
  * Date: 19.8.2013
  * Time: 13.41
  */
-class ImdbSupervisorSpec extends TestKit(ActorSystem("ImdbSupervisorSpec")) with PlayMovieSpec{
+class ImdbSupervisorSpec extends PlayMovieSpec("ImdbSupervisorSpec") {
 
   behavior of "An ImdbSupervisor"
 

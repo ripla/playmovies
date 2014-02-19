@@ -24,6 +24,7 @@ class QueryMaster(initialSupervisors: List[(String, Props)] = List.empty) extend
 
   var supervisors: List[ActorRef] = initialSupervisors map {
     case (id: String, props: Props) => context.actorOf(props, id)
+
   }
 
 

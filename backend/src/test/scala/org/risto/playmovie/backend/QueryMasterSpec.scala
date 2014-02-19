@@ -5,6 +5,7 @@ import akka.actor.{ActorRef, Props, Actor, ActorSystem}
 import akka.testkit.{TestActorRef, ImplicitSender, TestKit}
 import org.scalatest.{BeforeAndAfterAll, FlatSpec}
 import org.risto.playmovie.backend.QueryMasterProtocol.{RemoveSupervisor, AddSupervisor}
+import org.risto.playmovie.test.PlayMovieSpec
 
 
 /**
@@ -12,8 +13,7 @@ import org.risto.playmovie.backend.QueryMasterProtocol.{RemoveSupervisor, AddSup
  * Date: 8.8.2013
  * Time: 23.17
  */
-class QueryMasterSpec extends TestKit(ActorSystem
-  .create("QueryMasterSpec")) with PlayMovieSpec {
+class QueryMasterSpec extends PlayMovieSpec("QueryMasterSpec") {
 
   class EchoActor extends Actor {
     def receive = {

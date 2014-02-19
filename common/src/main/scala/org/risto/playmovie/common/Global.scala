@@ -1,10 +1,18 @@
 package org.risto.playmovie.common
 
 /**
- * User: Risto Yrjänä
- * Date: 6.10.2013
- * Time: 16.12
+ *
+ * @author Risto Yrjänä
  */
 object Global {
+
+  object StringOption {
+    def apply(value: String): Option[String] = if ("" == value) None else Option(value)
+
+  }
+
+  object Implicits {
+    implicit def stringToOption(value: String): Option[String] = StringOption(value)
+  }
 
 }
