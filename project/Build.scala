@@ -19,8 +19,7 @@ object BuildSettings {
     resolvers := Seq(scalaToolsSnapshots, jboss, akka, sonatypeOss, sprayRepo, sprayNightly)
   )
 
-
-    val projectSettings = Defaults.defaultSettings ++ buildSettings
+   val projectSettings = Defaults.defaultSettings ++ buildSettings
 }
 
 object Resolvers {
@@ -38,13 +37,14 @@ object Dependencies {
 
   // Versions
   object V {
-    val Scalatest = "1.9.1"
+    val Scalatest = "2.0.RC3"
     val Akka = "2.2.0"
     val Spray = "1.2-20131004"     //nightly required for Akka 2.2 compatibility
     val SprayJson = "1.2.5"
     val ScalaUri = "0.3.6"
     val Jetty = "7.4.0.v20110414"
-    val slf4j = "1.7.5"
+    val SLF4J = "1.7.5"
+    val RabbitMq = "3.1.4"
   }
 
   // Compile
@@ -57,21 +57,21 @@ object Dependencies {
   val scalaUri = "com.github.theon" %% "scala-uri" % V.ScalaUri
   val jettyServer = "org.eclipse.jetty" % "jetty-server" % V.Jetty
   val jettyServlet = "org.eclipse.jetty" % "jetty-servlet" % V.Jetty
-  val slf4j = "org.slf4j" % "slf4j-simple" % V.slf4j
+  val slf4j = "org.slf4j" % "slf4j-simple" % V.SLF4J
+  val rabbitMqClient = "com.rabbitmq" % "amqp-client" % V.RabbitMq
 
   object Test {
     val junit       = "junit" % "junit" % "4.5" % "test"
     val scalatest   = "org.scalatest" %% "scalatest" % V.Scalatest % "test"
     val akkaTestKit = "com.typesafe.akka" %% "akka-testkit" % V.Akka % "test"
     val jettyServer = Dependencies.jettyServer % "test"
-    val slf4jSimple = "org.slf4j" % "slf4j-simple" % V.slf4j % "test"
+    val slf4jSimple = "org.slf4j" % "slf4j-simple" % V.SLF4J % "test"
   }
 }
 
 object PlayMoviesBuild extends Build {
     import BuildSettings._
     import Dependencies._
-    import Resolvers._
 
     override lazy val settings = super.settings ++ buildSettings
 
@@ -93,10 +93,10 @@ object PlayMoviesBuild extends Build {
                             settings = projectSettings ++
                               SbtStartScript.startScriptForClassesSettings ++
                               AkkaKernelPlugin.distSettings ++
-                              Seq(libraryDependencies ++= Seq(akkaActor,akkaKernel,sprayClient,sprayJson,scalaUri,Test.junit,Test.scalatest,Test.akkaTestKit))) dependsOn(common % "compile->compile;test->test")
+                              Seq(libraryDependencies ++= Seq(akkaKernel,sprayClient,sprayJson,scalaUri,rabbitMqClient))) dependsOn(common % "compile->compile;test->test")
 
     lazy val common = Project("common",
                             file("common"),
                             settings = projectSettings ++
-                              Seq(libraryDependencies ++= Seq()))
+                              Seq(libraryDependencies ++= Seq(akkaActor,Test.junit,Test.scalatest,Test.akkaTestKit)))
 }
