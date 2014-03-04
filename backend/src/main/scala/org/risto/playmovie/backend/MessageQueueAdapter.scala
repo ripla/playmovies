@@ -1,13 +1,19 @@
 package org.risto.playmovie.backend
 
-import akka.actor.{PoisonPill, ActorLogging, ActorRef, Actor}
+import akka.actor._
 import com.typesafe.config.{ConfigValueFactory, ConfigFactory}
 
 import com.rabbitmq.client._
 import scala.collection.mutable.ListBuffer
-import org.risto.playmovie.backend.MQAdapterProtocol.{SendMessage, UnRegister, Register, Message}
+import org.risto.playmovie.backend.MQAdapterProtocol.SendMessage
 import akka.event.LoggingReceive
 import org.risto.playmovie.common.Global.Implicits._
+import scala.util.Try
+import org.risto.playmovie.backend.MQAdapterProtocol.UnRegister
+import org.risto.playmovie.backend.MQAdapterProtocol.Register
+import org.risto.playmovie.backend.MQAdapterProtocol.Message
+import scala.Some
+import org.risto.playmovie.backend.MQAdapterProtocol.SendMessage
 
 /**
  * Messaging protocol for communicating with [[MessageQueueAdapter]]
@@ -26,27 +32,19 @@ object MQAdapterProtocol {
 
 object MessageQueueAdapter {
 
-  val exchange: String = "playExchange"
-
   val queue: String = "playQueryQueue"
 
-  //val routingKey: String = "playRoutingkey"
-
-  def createQueryChannel(): Channel = {
-    createChannel(queue)
-  }
-
-  def createChannel(queue: String): Channel = {
+  def createQueryChannel(): Try[Channel] = {
     val conf = ConfigFactory.load().withFallback(ConfigFactory.empty().withValue("CLOUDAMQP_URL", ConfigValueFactory.fromAnyRef("amqp://guest:guest@localhost")))
     val uri = conf.getString("CLOUDAMQP_URL")
 
     val factory = new ConnectionFactory()
     factory.setUri(uri)
-    //Try(factory.newConnection()) flatmap(connection => Try(connection.createChannel()))
-    val connection = factory.newConnection()
-    connection.createChannel()
-
+    Try(factory.newConnection()) map (connection => Try(connection.createChannel())) flatten
   }
+
+  case class Connection(c: Channel)
+
 }
 
 /**
@@ -56,11 +54,47 @@ object MessageQueueAdapter {
  */
 class MessageQueueAdapter extends Actor with ActorLogging {
 
-  var listeners: ListBuffer[ActorRef] = ListBuffer.empty
+  var messageListeners: ListBuffer[ActorRef] = ListBuffer.empty
 
   var idReplyToQueue: Map[String, String] = Map.empty
 
-  val channel = MessageQueueAdapter.createQueryChannel()
+  var channel: Channel = _
+
+  override def preStart(): Unit = {
+    log.debug(s"${this.getClass.getSimpleName} prestart")
+    context.actorOf(Props(classOf[MessageQueueConnectionHandler]))
+  }
+
+
+  override def postStop(): Unit = {
+    channel.close()
+  }
+
+  val waitingForConnection: Receive = LoggingReceive {
+    case MessageQueueConnectionHandler.Connection(c) => {
+      //TODO should we try to remove existing consumer bindings?
+      channel = c
+      channel.queueDeclare(MessageQueueAdapter.queue, true, false, false, null)
+      channel.basicConsume(MessageQueueAdapter.queue, true, consumer)
+    }
+  }
+
+  val handlingMessages: Receive =
+    LoggingReceive {
+      case Register(actor) => {
+        messageListeners += actor
+        log.debug(s"Registered new listener, current listeners: $messageListeners")
+      }
+      case UnRegister(actor) => messageListeners -= actor
+      case incomingMessage: Message => {
+        log.debug(s"Sending $incomingMessage to $messageListeners")
+        messageListeners foreach (_ ! incomingMessage)
+      }
+      case outgoingMessage: SendMessage => outgoingMessage match {
+        case SendMessage(message, Some(uuid)) => sendReplyMessage(message, uuid)
+        case SendMessage(message, None) => sendMessage(message)
+      }
+    }
 
   val consumer = new DefaultConsumer(channel) {
     override def handleDelivery(consumerTag: String, envelope: Envelope, properties: AMQP.BasicProperties, body: Array[Byte]) = {
@@ -85,17 +119,6 @@ class MessageQueueAdapter extends Actor with ActorLogging {
   }
 
 
-  override def preStart(): Unit = {
-    log.debug(s"${this.getClass.getSimpleName} prestart")
-    channel.queueDeclare(MessageQueueAdapter.queue, true, false, false, null)
-    channel.basicConsume(MessageQueueAdapter.queue, true, consumer)
-  }
-
-
-  override def postStop(): Unit = {
-    channel.close()
-  }
-
   def getReplyQueue(id: String): String = idReplyToQueue.get(id) match {
     case Some(replyToQueue) => replyToQueue
     case None => throw new IllegalStateException(s"No replyToQueue found for message id $id")
@@ -112,13 +135,13 @@ class MessageQueueAdapter extends Actor with ActorLogging {
   def receive = {
     LoggingReceive {
       case Register(actor) => {
-        listeners += actor
-        log.debug(s"Registered new listener, current listeners: $listeners")
+        messageListeners += actor
+        log.debug(s"Registered new listener, current listeners: $messageListeners")
       }
-      case UnRegister(actor) => listeners -= actor
+      case UnRegister(actor) => messageListeners -= actor
       case incomingMessage: Message => {
-        log.debug(s"Sending $incomingMessage to $listeners")
-        listeners foreach (_ ! incomingMessage)
+        log.debug(s"Sending $incomingMessage to $messageListeners")
+        messageListeners foreach (_ ! incomingMessage)
       }
       case outgoingMessage: SendMessage => outgoingMessage match {
         case SendMessage(message, Some(uuid)) => sendReplyMessage(message, uuid)

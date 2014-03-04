@@ -9,20 +9,27 @@ import org.risto.playmovie.backend.MQAdapterProtocol.Message
 import org.risto.playmovie.backend.MQAdapterProtocol.SendMessage
 
 /**
- * User: Risto Yrjänä
- * Date: 28.10.2013
- * Time: 23.08
+ * @author Risto Yrjänä
  */
 class MessageQueueAdapterSpec extends PlayMovieSpec("MessageQueueAdapterSpec") {
 
+
+  var channel: Channel = _
+  val message = """{'query':'matrix','uuid':'foobar123'}"""
+  var messageAdapter: ActorRef = _
+  
+  before {
+  channel = MessageQueueAdapter.createQueryChannel().get
+
+    val messageAdapter = system.actorOf(Props(new MessageQueueAdapter()))
+  }
+
   behavior of "A MessageQueueAdapter"
+
 
   it should "send a query message to listeners when it receives message from the MQ" in {
     //setup
-    val channel = MessageQueueAdapter.createQueryChannel()
-    val message = """{'query':'matrix','uuid':'foobar123'}"""
 
-    val messageAdapter = system.actorOf(Props(new MessageQueueAdapter()))
 
     messageAdapter ! MQAdapterProtocol.Register(testActor)
 
@@ -38,7 +45,7 @@ class MessageQueueAdapterSpec extends PlayMovieSpec("MessageQueueAdapterSpec") {
 
   it should "work with RPC-style semantics asynchronously" in {
     //setup
-    val channel = MessageQueueAdapter.createQueryChannel()
+    val channel = MessageQueueAdapter.createQueryChannel().get
     channel.queueDeclare("response_queue", true, false, false, null)
     val message = """{'query':'matrix','uuid':'foobar123'}"""
     val expectedResultFromRemote = """{'title':'the Matrix','rating':'2','year':'2000'"""
@@ -82,7 +89,7 @@ class MessageQueueAdapterSpec extends PlayMovieSpec("MessageQueueAdapterSpec") {
 
   it should "work with standard MQ RPC" in {
     //setup
-    val channel = MessageQueueAdapter.createQueryChannel()
+    val channel = MessageQueueAdapter.createQueryChannel().get
     val message = """{'query':'matrix','uuid':'foobar123'}"""
     val resultFromRemote = """{'title':'the Matrix','rating':'2','year':'2000'"""
     val messageAdapter = system.actorOf(Props(new MessageQueueAdapter()))
