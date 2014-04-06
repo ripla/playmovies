@@ -4,6 +4,7 @@ import com.typesafe.sbt.SbtStartScript
 import akka.sbt.AkkaKernelPlugin
 import akka.sbt.AkkaKernelPlugin.{Dist, outputDirectory, distJvmOptions}
 
+
 object BuildSettings {
 
   import Dependencies._
@@ -85,19 +86,25 @@ object PlayMoviesBuild extends Build {
     settings = projectSettings ++
       Seq(SbtStartScript.stage in Compile := Unit)) aggregate(common, web, backend)
 
-  lazy val web = Project("web",
-    file("web"),
-    settings = projectSettings ++
-      SbtStartScript.startScriptForClassesSettings ++
-      Seq(libraryDependencies ++= Seq(jettyServer, jettyServlet, slf4j),
-        distJvmOptions in Dist := "-Xms256M -Xmx1024M",
-        outputDirectory in Dist := file("target/playmovieDist"))) dependsOn (common % "compile->compile;test->test")
+  lazy val web = {
+    import play.Project._
+    Project("web",
+      file("web"),
+      settings = BuildSettings.projectSettings ++
+                playScalaSettings ++
+                com.typesafe.sbt.SbtAtmos.atmosSettings    )
+        /*++
+        Seq(libraryDependencies ++= Seq(jettyServer, jettyServlet, slf4j),
+          distJvmOptions in Dist := "-Xms256M -Xmx1024M",
+          outputDirectory in Dist := file("target/playmovieDist"))) dependsOn (common % "compile->compile;test->test")*/
+  }
 
   lazy val backend = Project("backend",
     file("backend"),
     settings = projectSettings ++
       SbtStartScript.startScriptForClassesSettings ++
       AkkaKernelPlugin.distSettings ++
+      com.typesafe.sbt.SbtAtmos.atmosSettings ++
       Seq(libraryDependencies ++= Seq(akkaKernel, sprayClient, sprayJson, scalaUri, rabbitMqClient))) dependsOn (common % "compile->compile;test->test")
 
   lazy val common = Project("common",
