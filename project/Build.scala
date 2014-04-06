@@ -49,6 +49,8 @@ object Dependencies {
   val jettyServlet = "org.eclipse.jetty" % "jetty-servlet" % V.Jetty
   val slf4j = "org.slf4j" % "slf4j-simple" % V.SLF4J
   val rabbitMqClient = "com.rabbitmq" % "amqp-client" % V.RabbitMq
+  val webjarsPlay = "org.webjars" %% "webjars-play" % "2.2.0"
+  val webjarsBootstrap ="org.webjars" % "bootstrap" % "2.3.1"
 
   // Versions
   object V {
@@ -92,11 +94,12 @@ object PlayMoviesBuild extends Build {
       file("web"),
       settings = BuildSettings.projectSettings ++
                 playScalaSettings ++
-                com.typesafe.sbt.SbtAtmos.atmosSettings    )
-        /*++
-        Seq(libraryDependencies ++= Seq(jettyServer, jettyServlet, slf4j),
-          distJvmOptions in Dist := "-Xms256M -Xmx1024M",
-          outputDirectory in Dist := file("target/playmovieDist"))) dependsOn (common % "compile->compile;test->test")*/
+                com.typesafe.sbt.SbtAtmos.atmosSettings ++
+                Seq(libraryDependencies ++= Seq(webjarsBootstrap, webjarsPlay))) dependsOn (common % "compile->compile;test->test")
+
+    /*++
+      distJvmOptions in Dist := "-Xms256M -Xmx1024M",
+      outputDirectory in Dist := file("target/playmovieDist"))) */
   }
 
   lazy val backend = Project("backend",
