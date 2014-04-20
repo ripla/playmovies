@@ -1,0 +1,15 @@
+@(result: org.risto.playmovie.common.QueryProtocol.QueryResult)
+@import org.risto.playmovie.common.QueryProtocol._
+
+@result match {
+        case success: Success => {
+            <div class="bg-primary">@success.name</div>
+            <div>Year: @success.year</div>
+        }
+
+        case fail => {
+            <div class="bg-warning">Not found: @fail</div>
+        }
+}
+
+
