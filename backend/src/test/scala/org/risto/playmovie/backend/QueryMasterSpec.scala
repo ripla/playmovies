@@ -1,11 +1,12 @@
 package org.risto.playmovie.backend
 
-import QueryProtocol.Query
 import akka.actor.{ActorRef, Props, Actor, ActorSystem}
-import akka.testkit.{TestActorRef, ImplicitSender, TestKit}
-import org.scalatest.{BeforeAndAfterAll, FlatSpec}
+import akka.testkit.TestActorRef
+import org.scalatest.BeforeAndAfterAll
 import org.risto.playmovie.backend.QueryMasterProtocol.{RemoveSupervisor, AddSupervisor}
 import org.risto.playmovie.test.PlayMovieSpec
+import org.risto.playmovie.common.QueryProtocol
+import org.risto.playmovie.common.QueryProtocol.Query
 
 
 /**

@@ -2,13 +2,13 @@ package org.risto.playmovie.backend
 
 import akka.actor.{PoisonPill, Props, ActorRef, Actor}
 import org.risto.playmovie.backend.QueryMasterProtocol.{RemoveSupervisor, AddSupervisor}
-import org.risto.playmovie.backend.QueryProtocol.QueryResult
 import akka.pattern.ask
 import scala.concurrent.duration._
 import akka.util.Timeout
-import akka.dispatch.Futures
 import akka.pattern.pipe
 import scala.concurrent.Future
+import org.risto.playmovie.common.QueryProtocol
+import org.risto.playmovie.common.QueryProtocol.QueryResult
 
 /**
  * Created with IntelliJ IDEA.

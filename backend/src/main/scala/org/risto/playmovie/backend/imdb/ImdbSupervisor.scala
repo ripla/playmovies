@@ -1,13 +1,13 @@
 package org.risto.playmovie.backend.imdb
 
 import akka.actor.{Actor, Props}
-import org.risto.playmovie.backend.QueryProtocol.Query
+import org.risto.playmovie.common.{Rating, QueryProtocol}
+import QueryProtocol.Query
 import akka.routing.FromConfig
 import akka.pattern.{AskTimeoutException, ask, pipe}
-import org.risto.playmovie.backend.QueryProtocol._
+import QueryProtocol._
 import org.risto.playmovie.backend.imdb.ImdbProtocol.ImdbResponse
 import scala.concurrent.Future
-import org.risto.playmovie.backend.Rating
 import scala.concurrent.duration._
 import akka.util.Timeout
 

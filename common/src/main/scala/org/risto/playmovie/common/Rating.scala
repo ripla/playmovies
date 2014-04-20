@@ -1,4 +1,4 @@
-package org.risto.playmovie.backend
+package org.risto.playmovie.common
 
 /**
  * User: Risto Yrjänä
