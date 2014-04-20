@@ -12,10 +12,12 @@ object Dependencies {
   val scalaUri = "com.github.theon" %% "scala-uri" % V.ScalaUri
   val jettyServer = "org.eclipse.jetty" % "jetty-server" % V.Jetty
   val jettyServlet = "org.eclipse.jetty" % "jetty-servlet" % V.Jetty
+  val jodaTime = "joda-time" % "joda-time" % "2.3"
+  val jodaTimeConvert = "org.joda" % "joda-convert" % "1.6"
   val slf4j = "org.slf4j" % "slf4j-simple" % V.SLF4J
   val rabbitMqClient = "com.rabbitmq" % "amqp-client" % V.RabbitMq
   val webjarsPlay = "org.webjars" %% "webjars-play" % "2.2.0"
-  val webjarsBootstrap ="org.webjars" % "bootstrap" % "2.3.1"
+  val webjarsBootstrap ="org.webjars" % "bootstrap" % "3.1.1"
 
   // Versions
   object V {

@@ -1,13 +1,15 @@
 // Comment to get more information during initialization
 logLevel := Level.Warn
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-start-script" % "0.10.0")
-
 resolvers += "Sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"
 
-addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "1.6.0-SNAPSHOT")
+resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
 
 resolvers += "Akka Repo" at "http://repo.akka.io/releases/"
+
+addSbtPlugin("com.typesafe.sbt" % "sbt-start-script" % "0.10.0")
+
+addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "1.6.0-SNAPSHOT")
 
 addSbtPlugin("com.typesafe.akka" % "akka-sbt-plugin" % "2.2.1")
 

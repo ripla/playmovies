@@ -13,7 +13,7 @@ object BuildSettings {
       "-deprecation", "-unchecked"),
     fork in test := true,
     libraryDependencies ++= Seq(Test.scalatest),
-    resolvers := Seq(scalaToolsSnapshots, jboss, akka, sonatypeOss, sprayRepo, sprayNightly)
+    resolvers := Seq(scalaToolsSnapshots, jboss, akka, sonatypeOss, sprayRepo, sprayNightly, typesafeReleases)
   )
 
   val projectSettings = Defaults.defaultSettings ++ buildSettings
