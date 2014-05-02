@@ -1,7 +1,6 @@
 package org.risto.playmovie.backend
 
 import akka.actor.Props
-import org.risto.playmovie.backend.imdb.ImdbWorker
 import scala.concurrent.duration._
 import org.risto.playmovie.test.PlayMovieSpec
 import org.risto.playmovie.backend.themoviedb.MovieDbProtocol.{MovieDbQuery, MovieDbResponse, MovieDbResult}
@@ -20,12 +19,16 @@ class MovieDbWorkerSpec extends PlayMovieSpec("MovieDbWorkerSpec") {
   it should "return correct information on query 'Blade Runner'" in {
     val movieDbWorker = system.actorOf(Props(new MovieDbWorker))
     movieDbWorker ! MovieDbQuery("Blade Runner")
-    expectMsg(5 seconds, MovieDbResponse(Some(List(MovieDbResult("Blade Runner", 8.3, DateTime.parse("1984-01-01"))))))
+    val Date = DateTime.parse("1982-06-25")
+    //expectMsg(5 seconds, MovieDbResponse(Some(List(MovieDbResult("Blade Runner", 7.5, DateTime.parse("1982-06-25")))), None))
+    expectMsgPF(5 seconds) {
+      case MovieDbResponse(Some(List(MovieDbResult("Blade Runner", 7.5, Date), _*)), None) =>
+    }
   }
 
-  it should "return a 404 result on query 'foobar'" in {
-    val movieDbWorker = system.actorOf(Props(new ImdbWorker))
+  it should "return an empty result on query 'foobar'" in {
+    val movieDbWorker = system.actorOf(Props(new MovieDbWorker))
     movieDbWorker ! MovieDbQuery("foobar")
-    //    expectMsg(5 seconds, MovieDbResponse(None, Some(404)))
+    expectMsg(5 seconds, MovieDbResponse(None, None))
   }
 }

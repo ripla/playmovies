@@ -10,19 +10,18 @@ import spray.json._
 import spray.client.pipelining._
 
 import com.github.theon.uri.Uri._
-import spray.http.{StatusCodes, HttpEntity, HttpRequest, HttpResponse}
+import spray.http.{HttpEntity, HttpRequest, HttpResponse}
 import org.joda.time.DateTime
 import org.risto.playmovie.PlayMovieConfig
 import org.risto.playmovie.common.QueryProtocol
 import spray.httpx.UnsuccessfulResponseException
-import org.risto.playmovie.common.QueryProtocol.Unauthorized
 
 
 object MovieDbProtocol {
 
   case class MovieDbResult(title: String, vote_average: Double, release_date: DateTime)
 
-  case class MovieDbResponse(results: Option[List[MovieDbResult]])
+  case class MovieDbResponse(results: Option[List[MovieDbResult]], code: Option[Int])
 
   case class MovieDbQuery(query: String)
 
@@ -39,14 +38,14 @@ object MovieDbJsonProtocol extends DefaultJsonProtocol {
     def write(d: DateTime) = JsArray(JsString(d.toString("yyyy-MM-dd")))
 
     def read(value: JsValue) = value match {
-      case JsString(MovieDbDatePattern(year,month,date)) =>
+      case JsString(MovieDbDatePattern(year, month, date)) =>
         new DateTime(year.toInt, month.toInt, date.toInt, 0, 0)
       case _ => deserializationError("Date expected")
     }
   }
 
   implicit val resultFormat = jsonFormat3(MovieDbResult)
-  implicit val responseFormat = jsonFormat1(MovieDbResponse)
+  implicit val responseFormat = jsonFormat2(MovieDbResponse)
 }
 
 
@@ -98,17 +97,17 @@ class MovieDbWorker extends Actor with ActorLogging {
       val uriWithQuery = endpointUri & ("query" -> query)
       val resultFuture: Future[MovieDbResponse] = pipeline(Get(uriWithQuery))
       resultFuture recover {
-        case ure: UnsuccessfulResponseException => ure.response.status.intValue match {
-          case StatusCodes.Unauthorized.intValue => {
-            log.error(s"Query $query failed with ${ure.response.status}. Details: ${ure.response.entity}")
-            QueryProtocol.Unauthorized
-          }
-
+        case ure: UnsuccessfulResponseException => {
+          log.error(s"Query $query failed with ${ure.response.status}. Details: ${ure.response.entity}")
+          MovieDbResponse(results = None, code = Some(ure.response.status.intValue))
         }
         case otherFail => {
           log.error(s"Query $query failed with $otherFail.")
           QueryProtocol.Unknown
         }
+      } map{
+        case MovieDbResponse(Some(Nil), code) => MovieDbResponse(None, code)
+        case other => other
       } pipeTo sender
     }
   }
