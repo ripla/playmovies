@@ -21,7 +21,7 @@ object Dependencies {
 
   // Versions
   object V {
-    val Scalatest = "2.0.RC3"
+    val Scalatest = "2.1.5"
     val Akka = "2.2.0"
     val Spray = "1.2-20131004"
     //nightly required for Akka 2.2 compatibility
@@ -35,6 +35,7 @@ object Dependencies {
   object Test {
     val junit = "junit" % "junit" % "4.5" % "test"
     val scalatest = "org.scalatest" %% "scalatest" % V.Scalatest % "test"
+    val scalatestPlus = "org.scalatestplus" % "play_2.10" % "1.0.0" % "test"
     val akkaTestKit = "com.typesafe.akka" %% "akka-testkit" % V.Akka % "test"
     val jettyServer = Dependencies.jettyServer % "test"
     val slf4jSimple = "org.slf4j" % "slf4j-simple" % V.SLF4J % "test"
