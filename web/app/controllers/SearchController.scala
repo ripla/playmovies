@@ -1,15 +1,18 @@
 package controllers
 
 import play.api.mvc.{Action, Controller}
-import play.api.libs.json.Json
-import org.risto.playmovie.common.Global
-import play.api.Routes
+import play.api.libs.json.{JsValue, Writes, Json}
+import org.risto.playmovie.common.Rating
+import org.risto.playmovie.common.QueryProtocol._
 
 object SearchController extends Controller {
 
-  implicit val fooWrites = Json.writes[Message]
+  implicit val ratingWrites: Writes[Rating] = new Writes[Rating]{
+    override def writes(o: Rating): JsValue = Json.toJson(o.rating)
+  }
+  implicit val successWrites: Writes[Success] = Json.writes[Success]
 
   def search = Action {
-    Ok(Json.toJson(Message(s"Hello from ${Global.StringOption("").getOrElse("Common dependency working OK")}")))
+    Ok(Json.toJson(Success(name = "Blade Runner", year = Some(1983), Rating(9), service = "The MovieDB", "123")))
   }
 }
