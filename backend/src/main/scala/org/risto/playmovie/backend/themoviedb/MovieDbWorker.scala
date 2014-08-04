@@ -19,7 +19,7 @@ import spray.httpx.UnsuccessfulResponseException
 
 object MovieDbProtocol {
 
-  case class MovieDbResult(title: String, vote_average: Double, release_date: DateTime)
+  case class MovieDbResult(title: String, vote_average: Double, release_date: Option[DateTime])
 
   case class MovieDbResponse(results: Option[List[MovieDbResult]], code: Option[Int])
 
@@ -31,16 +31,20 @@ import org.risto.playmovie.backend.themoviedb.MovieDbProtocol._
 
 object MovieDbJsonProtocol extends DefaultJsonProtocol {
 
-  implicit object ColorJsonFormat extends RootJsonFormat[DateTime] {
+  implicit object ColorJsonFormat extends RootJsonFormat[Option[DateTime]] {
     val MovieDbDatePattern = """(\d{4})-(\d{2})-(\d{2})""".r
 
 
-    def write(d: DateTime) = JsArray(JsString(d.toString("yyyy-MM-dd")))
+    def write(d: Option[DateTime]) = d match {
+      case Some(date) => JsArray(JsString(date.toString("yyyy-MM-dd")))
+      case None => JsString("")
+    }
 
     def read(value: JsValue) = value match {
       case JsString(MovieDbDatePattern(year, month, date)) =>
-        new DateTime(year.toInt, month.toInt, date.toInt, 0, 0)
-      case _ => deserializationError("Date expected")
+        Some(new DateTime(year.toInt, month.toInt, date.toInt, 0, 0))
+      case JsString("") => None
+      case _ => deserializationError(s"Date expected, got $value")
     }
   }
 
@@ -58,7 +62,7 @@ object MovieDbJsonProtocol extends DefaultJsonProtocol {
 class MovieDbWorker extends Actor with ActorLogging {
 
   //TODO maybe use the Spray URI classes?
-  val endpointUri = PlayMovieConfig.get.getString("moviedb.endpointUri") + "/3/search/movie" ? ("api_key" -> PlayMovieConfig.get.getString("moviedb.apikey"))
+  val endpointUri = PlayMovieConfig.get.getString("playmovies.moviedb.endpointUri") + "/3/search/movie" ? ("api_key" -> PlayMovieConfig.get.getString("moviedb.apikey"))
 
   implicit val system = context.system
 
@@ -98,7 +102,7 @@ class MovieDbWorker extends Actor with ActorLogging {
       val resultFuture: Future[MovieDbResponse] = pipeline(Get(uriWithQuery))
       resultFuture recover {
         case ure: UnsuccessfulResponseException => {
-          log.error(s"Query $query failed with ${ure.response.status}. Details: ${ure.response.entity}")
+          log.error(s"Query '$query' failed with ${ure.response.status}. Details: ${ure.response.entity}")
           MovieDbResponse(results = None, code = Some(ure.response.status.intValue))
         }
         case otherFail => {

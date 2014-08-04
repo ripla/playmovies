@@ -4,6 +4,11 @@ import akka.kernel.Bootable
 import akka.actor.{Props, ActorSystem}
 import org.risto.playmovie.backend.imdb.ImdbSupervisor
 
+
+object Bootstrap {
+  def main(args: Array[String]) = new Bootstrap().startup()
+}
+
 /**
  * Created with IntelliJ IDEA.
  * User: Risto Yrjänä
@@ -18,7 +23,7 @@ class Bootstrap extends Bootable {
     //TODO read config
     //TODO get actors from config
 
-    val querySupervisors = List(ImdbSupervisor.getProps)
+    val querySupervisors = List(ImdbSupervisor.getWorkerProps)
 
     system.actorOf(Props(new QueryMaster(querySupervisors)))
 

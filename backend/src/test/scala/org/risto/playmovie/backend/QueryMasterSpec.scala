@@ -28,11 +28,11 @@ class QueryMasterSpec extends PlayMovieSpec("QueryMasterSpec") {
     val queryMasterParams = List(("testSupervisor", Props(new ActorForwarder(testActor))))
     val queryMaster = system.actorOf(Props(new QueryMaster(queryMasterParams)))
 
-    queryMaster ! Query("test1")
-    expectMsg(Query("test1"))
+    queryMaster ! Query("test1","123")
+    expectMsg(Query("test1","123"))
 
-    queryMaster ! Query("test2")
-    expectMsg(Query("test2"))
+    queryMaster ! Query("test2","123")
+    expectMsg(Query("test2","123"))
   }
 
   it should "return the results from a QuerySupervisor" in {
@@ -40,7 +40,7 @@ class QueryMasterSpec extends PlayMovieSpec("QueryMasterSpec") {
 
     val queryMaster = system.actorOf(Props(new QueryMaster(queryMasterParams)))
 
-    queryMaster ! Query("test")
+    queryMaster ! Query("test","123")
     expectMsg(List(QueryProtocol.NotFound))
   }
 

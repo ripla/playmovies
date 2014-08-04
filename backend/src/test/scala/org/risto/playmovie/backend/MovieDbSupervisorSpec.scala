@@ -30,7 +30,7 @@ class MovieDbSupervisorSpec extends PlayMovieSpec("ImdbSupervisorSpec") {
     //val testWorkerProps = ("testWorker", Props(new ActorForwarder(testActor)))
     val supervisor = TestActorRef[ImdbSupervisor](Props(new ImdbSupervisor(("testWorker", Props(new ActorForwarder(echoProbe.ref))))))
 
-    supervisor ! QueryProtocol.Query("test")
-    expectMsg(QueryProtocol.Success("title", 1984, Rating(5), "IMDB"))
+    supervisor ! QueryProtocol.Query("test", "123")
+    expectMsg(QueryProtocol.Success("title", Some(1984), Rating(5), "IMDB", "123"))
   }
 }

@@ -50,7 +50,7 @@ class MessageQueueConnectionHandler(connectionUser: ActorRef) extends Actor with
         context.stop(self)
       }
       case Failure(exception) => {
-        log.error("Failed to retrieve MQ connection", exception)
+        log.error(exception, "Failed to retrieve MQ connection")
         import context.dispatcher
         cancellable = Some(context.system.scheduler.scheduleOnce(500 milliseconds, self, MessageQueueConnectionHandler.GetConnection))
       }

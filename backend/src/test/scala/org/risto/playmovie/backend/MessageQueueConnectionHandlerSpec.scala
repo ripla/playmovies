@@ -2,8 +2,8 @@ package org.risto.playmovie.backend
 
 import org.risto.playmovie.test.PlayMovieSpec
 import com.rabbitmq.client.{Channel, ConnectionFactory, Connection}
-import org.mockito.Mockito.when
 import akka.actor.Props
+import org.mockito.Mockito.when
 
 /**
  * @author Risto Yrjänä
@@ -33,7 +33,9 @@ class MessageQueueConnectionHandlerSpec extends PlayMovieSpec("MessageQueueConne
   it should "retry connection if first attempt fails" in {
     val channelMock = mock[Channel]
     //interestingly enough, this needs to be an unchecked exception
-    when(connectionMock.createChannel()).thenThrow(new RuntimeException()).thenReturn(channelMock)
+    when(connectionMock.createChannel())
+    .thenThrow(new RuntimeException())
+    .thenReturn(channelMock)
 
     system.actorOf(Props(new MessageQueueConnectionHandler(testActor)))
 
@@ -41,7 +43,17 @@ class MessageQueueConnectionHandlerSpec extends PlayMovieSpec("MessageQueueConne
   }
 
   it should "return connection after multiple retries" in {
-    pending
+    val channelMock = mock[Channel]
+    //interestingly enough, this needs to be an unchecked exception
+    when(connectionMock.createChannel())
+    .thenThrow(new RuntimeException())
+    .thenThrow(new RuntimeException())
+    .thenThrow(new RuntimeException())
+    .thenReturn(channelMock)
+
+    system.actorOf(Props(new MessageQueueConnectionHandler(testActor)))
+
+    expectMsg(MessageQueueConnectionHandler.Connection(channelMock))
   }
 
 }

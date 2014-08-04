@@ -22,7 +22,7 @@ class MovieDbWorkerSpec extends PlayMovieSpec("MovieDbWorkerSpec") {
     val Date = DateTime.parse("1982-06-25")
     //expectMsg(5 seconds, MovieDbResponse(Some(List(MovieDbResult("Blade Runner", 7.5, DateTime.parse("1982-06-25")))), None))
     expectMsgPF(5 seconds) {
-      case MovieDbResponse(Some(List(MovieDbResult("Blade Runner", 7.5, Date), _*)), None) =>
+      case MovieDbResponse(Some(List(MovieDbResult("Blade Runner", 7.5, Some(Date)), _*)), None) =>
     }
   }
 

@@ -5,7 +5,6 @@ import com.typesafe.config.{ConfigValueFactory, ConfigFactory}
 
 import com.rabbitmq.client._
 import scala.collection.mutable.ListBuffer
-import org.risto.playmovie.backend.MQAdapterProtocol.SendMessage
 import akka.event.LoggingReceive
 import org.risto.playmovie.common.Global.Implicits._
 import scala.util.Try
@@ -27,7 +26,6 @@ object MQAdapterProtocol {
   case class Message(message: String, uuid: Option[String])
 
   case class SendMessage(message: String, uuid: Option[String])
-
 }
 
 object MessageQueueAdapter {
@@ -52,7 +50,7 @@ object MessageQueueAdapter {
  *
  * @author Risto Yrjänä
  */
-class MessageQueueAdapter extends Actor with ActorLogging {
+class MessageQueueAdapter extends Actor with ActorLogging with Stash {
 
   var messageListeners: ListBuffer[ActorRef] = ListBuffer.empty
 
@@ -62,7 +60,7 @@ class MessageQueueAdapter extends Actor with ActorLogging {
 
   override def preStart(): Unit = {
     log.debug(s"${this.getClass.getSimpleName} prestart")
-    context.actorOf(Props(classOf[MessageQueueConnectionHandler]))
+    context.actorOf(Props(classOf[MessageQueueConnectionHandler], context.self))
   }
 
 
@@ -70,22 +68,39 @@ class MessageQueueAdapter extends Actor with ActorLogging {
     channel.close()
   }
 
-  val waitingForConnection: Receive = LoggingReceive {
+  /**
+   * Common message handling (listener handling) for all states
+   */
+  val registrationHandling: Receive = LoggingReceive {
+    case Register(actor) => {
+      messageListeners += actor
+      log.debug(s"Registered new listener, current listeners: $messageListeners")
+    }
+    case UnRegister(actor) => messageListeners -= actor
+  }
+
+  /**
+   * While waiting for connection, we stash all messages. Once we get the connection, we unload the stash and switch
+   * to normal behaviour. This doesn't handle losing the connection
+   */
+  val waitingForConnection: Receive = registrationHandling orElse LoggingReceive {
     case MessageQueueConnectionHandler.Connection(c) => {
       //TODO should we try to remove existing consumer bindings?
       channel = c
       channel.queueDeclare(MessageQueueAdapter.queue, true, false, false, null)
       channel.basicConsume(MessageQueueAdapter.queue, true, consumer)
+
+      unstashAll()
+      context.become(handlingMessages)
     }
+
+    case otherMessage => stash()
   }
 
-  val handlingMessages: Receive =
+
+  val handlingMessages: Receive = registrationHandling orElse
     LoggingReceive {
-      case Register(actor) => {
-        messageListeners += actor
-        log.debug(s"Registered new listener, current listeners: $messageListeners")
-      }
-      case UnRegister(actor) => messageListeners -= actor
+
       case incomingMessage: Message => {
         log.debug(s"Sending $incomingMessage to $messageListeners")
         messageListeners foreach (_ ! incomingMessage)
@@ -132,21 +147,5 @@ class MessageQueueAdapter extends Actor with ActorLogging {
     channel.basicPublish("", MessageQueueAdapter.queue, MessageProperties.PERSISTENT_TEXT_PLAIN, message.getBytes())
   }
 
-  def receive = {
-    LoggingReceive {
-      case Register(actor) => {
-        messageListeners += actor
-        log.debug(s"Registered new listener, current listeners: $messageListeners")
-      }
-      case UnRegister(actor) => messageListeners -= actor
-      case incomingMessage: Message => {
-        log.debug(s"Sending $incomingMessage to $messageListeners")
-        messageListeners foreach (_ ! incomingMessage)
-      }
-      case outgoingMessage: SendMessage => outgoingMessage match {
-        case SendMessage(message, Some(uuid)) => sendReplyMessage(message, uuid)
-        case SendMessage(message, None) => sendMessage(message)
-      }
-    }
-  }
+  def receive = waitingForConnection
 }
