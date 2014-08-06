@@ -10,7 +10,8 @@ object BackendModule {
     file("backend"),
     settings = projectSettings ++
       SbtStartScript.startScriptForClassesSettings ++
+      Seq(mainClass in Compile := Some("org.risto.playmovie.backend.Bootstrap")) ++
       AkkaKernelPlugin.distSettings ++
-      com.typesafe.sbt.SbtAtmos.atmosSettings ++
+      //com.typesafe.sbt.SbtAtmos.atmosSettings ++
       Seq(libraryDependencies ++= Seq(akkaKernel, sprayClient, sprayJson, scalaUri, rabbitMqClient))) dependsOn (CommonModule.project % "compile->compile;test->test")
 }

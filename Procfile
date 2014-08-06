@@ -1,2 +1,2 @@
-web: web/target/universal/stage/bin/web --http.port=$PORT $PLAY_OPTS
+web: web/target/universal/stage/bin/web
 backend: backend/target/start

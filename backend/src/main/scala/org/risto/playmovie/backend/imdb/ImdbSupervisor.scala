@@ -13,7 +13,7 @@ import akka.routing.FromConfig
 
 object ImdbSupervisor {
   def getWorkerProps =
-    ("imdbrouter", FromConfig.props(Props(new ImdbWorker())))
+    ("imdbrouter", Props(new ImdbWorker()).withRouter(FromConfig))
 }
 
 

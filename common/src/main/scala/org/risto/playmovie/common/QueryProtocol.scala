@@ -9,25 +9,25 @@ package org.risto.playmovie.common
  */
 object QueryProtocol {
 
-  case class Query(query: String)
+  case class Query(query: String, uuid: String)
 
-  abstract class QueryResult {
+  abstract class QueryResult(service: String, uuid: String) {
     def success: Boolean
   }
 
-  case class Success(name: String, year: Int, rating: Rating, service: String) extends QueryResult {
+  case class Success(name: String, year: Option[Int], rating: Rating, service: String, uuid: String) extends QueryResult(service, uuid) {
     override val success = true
   }
 
-  abstract class Failure extends QueryResult{
+  abstract class Failure(service: String, uuid: String) extends QueryResult(service: String, uuid: String){
     override val success = false
   }
 
-  case object NotAvailable extends Failure
+  case class NotAvailable(service: String, uuid: String) extends Failure(service: String, uuid: String)
 
-  case object Unknown extends Failure
+  case class Unknown(service: String, uuid: String) extends Failure(service: String, uuid: String)
 
-  case object NotFound extends Failure
+  case class NotFound(service: String, uuid: String) extends Failure(service: String, uuid: String)
 
-  case object Unauthorized extends Failure
+  case class Unauthorized(service: String, uuid: String) extends Failure(service: String, uuid: String)
 }

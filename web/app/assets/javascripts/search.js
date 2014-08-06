@@ -5,7 +5,7 @@ $(function() {
         // make an ajax get request to get the message
         jsRoutes.controllers.SearchController.search(event.target.value).ajax({
             success: function(result) {
-                console.log(result)
+                console.log(result);
                 //$(".well").append($("<h1>").text(data.value))
                 $("#result-body")
                     .append($("<tr>")
@@ -13,8 +13,8 @@ $(function() {
                         .append($("<td>").text(result.year))
                         .append($("<td>").text(result.rating))
                         .append($("<td>").text(result.service))
-                    )
+                    );
             }
-        })
-    })
-})
+        });
+    });
+});

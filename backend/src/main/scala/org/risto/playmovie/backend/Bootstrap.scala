@@ -3,6 +3,7 @@ package org.risto.playmovie.backend
 import akka.kernel.Bootable
 import akka.actor.{Props, ActorSystem}
 import org.risto.playmovie.backend.imdb.ImdbSupervisor
+import org.risto.playmovie.backend.themoviedb.MovieDbSupervisor
 
 
 object Bootstrap {
@@ -23,10 +24,13 @@ class Bootstrap extends Bootable {
     //TODO read config
     //TODO get actors from config
 
-    val querySupervisors = List(ImdbSupervisor.getWorkerProps)
+    val querySupervisors: List[(String, Props)] = List(MovieDbSupervisor.supervisorProps)
 
-    system.actorOf(Props(new QueryMaster(querySupervisors)))
+    val queryMaster = system.actorOf(Props(new QueryMaster(querySupervisors)), "querymaster")
 
+    val mqAdapter = system.actorOf(Props(new MessageQueueAdapter), "mqAdapter")
+
+    system.actorOf(Props(new QueryMqAdapter(queryMaster, mqAdapter)), "queryAdapter")
   }
 
   def shutdown() {

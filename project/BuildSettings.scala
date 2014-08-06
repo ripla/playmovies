@@ -8,7 +8,7 @@ object BuildSettings {
   lazy val buildSettings = Seq(
     organization := "org.risto",
     version := "0.1-SNAPSHOT",
-    scalaVersion := "2.10.2",
+    scalaVersion := "2.11.1",
     scalacOptions ++= Seq("-encoding", "UTF-8",
       "-deprecation", "-unchecked"),
     fork in test := true,
@@ -16,5 +16,5 @@ object BuildSettings {
     resolvers := Seq(scalaToolsSnapshots, jboss, akka, sonatypeOss, sprayRepo, sprayNightly, typesafeReleases)
   )
 
-  val projectSettings = Defaults.defaultSettings ++ buildSettings
+  val projectSettings = buildSettings ++ net.virtualvoid.sbt.graph.Plugin.graphSettings
 }

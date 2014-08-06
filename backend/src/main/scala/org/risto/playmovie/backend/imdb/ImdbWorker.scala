@@ -16,7 +16,7 @@ import spray.client.pipelining._
 import spray.util._
 import spray.http._
 
-import com.github.theon.uri.Uri._
+import com.netaporter.uri.dsl._
 
 object ImdbProtocol {
 

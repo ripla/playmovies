@@ -9,7 +9,7 @@ import spray.http.ContentTypes.`application/json`
 import spray.json._
 import spray.client.pipelining._
 
-import com.github.theon.uri.Uri._
+import com.netaporter.uri.dsl._
 import spray.http.{HttpEntity, HttpRequest, HttpResponse}
 import org.joda.time.DateTime
 import org.risto.playmovie.PlayMovieConfig
