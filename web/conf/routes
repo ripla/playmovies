@@ -8,5 +8,5 @@ GET     /javascriptRoutes           controllers.JavascriptController.javascriptR
 POST    /search                     controllers.SearchController.search()
 
 # Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file               controllers.Assets.at(path="/public", file)
+GET     /assets/*file               controllers.Assets.versioned(path="/public", file)
 GET     /webjars/*file              controllers.WebJarAssets.at(file)

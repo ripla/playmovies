@@ -4,11 +4,11 @@
 <html>
 <head>
     <title>@title</title>
-    <link rel='shortcut icon' type='image/png' href='@routes.Assets.at("images/favicon.png")'>
+    <link rel='shortcut icon' type='image/png' href='@routes.Assets.versioned("images/favicon.png")'>
     <link rel='stylesheet' href='@routes.WebJarAssets.at(WebJarAssets.locate("bootstrap.min.css"))'>
-    <link rel='stylesheet' href='@routes.Assets.at("stylesheets/index.css")'>
+    <link rel='stylesheet' href='@routes.Assets.versioned("stylesheets/index.css")'>
     <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("jquery.min.js"))'></script>
-    <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("bootstrap.min.js"))'></script>
+    <!--<script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("bootstrap.min.js"))'></script>-->
     <script type="text/javascript" src="@routes.JavascriptController.javascriptRoutes"></script>
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
