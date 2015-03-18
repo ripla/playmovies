@@ -2,64 +2,34 @@ package org.risto.playmovie.backend
 
 import akka.actor._
 import akka.event.LoggingReceive
-import org.risto.playmovie.backend.QueryMasterProtocol.{RemoveSupervisor, AddSupervisor}
-import akka.pattern.ask
-import scala.concurrent.duration._
-import akka.util.Timeout
-import akka.pattern.pipe
-import scala.concurrent.Future
 import org.risto.playmovie.common.QueryProtocol
-import org.risto.playmovie.common.QueryProtocol.QueryResult
 
 /**
- * Created with IntelliJ IDEA.
- * User: Risto Yrjänä
- * Date: 8.8.2013
- * Time: 23.16
+ * Handles all the incoming queries and sends them on to the pre-configured supervisors.
+ * The results are handled by the provided result actors.
+ *
+ * @param queryActors
+ * @param resultActors
  */
-class QueryMaster(initialSupervisors: List[(String, Props)] = List.empty) extends Actor with ActorLogging {
+class QueryMaster(queryActors: List[Props], resultActors: List[Props]) extends Actor with ActorLogging {
+  require(queryActors != null && queryActors.nonEmpty, "At least one query actor required")
+  require(resultActors != null && resultActors.nonEmpty, "At least one result actor required")
 
-  def this() = {
-    this(List.empty)
-  }
+  var childIndex = 0
 
-  var supervisors: List[ActorRef] = initialSupervisors map {
-    case (id: String, props: Props) => context.actorOf(props, id)
+  val supervisors: List[ActorRef] = queryActors map (supervisorActorProps => createActor(supervisorActorProps))
 
-  }
+  val writers: List[ActorRef] = resultActors map (resultActorProps => createActor(resultActorProps))
 
   def receive = LoggingReceive {
-    case query: QueryProtocol.Query => {
-      if(supervisors.isEmpty) {
-        log.info(s"No query supervisors defined, discarding query: $query")
-      }else {
-        implicit val system = context.system
-        import system.dispatcher
-        implicit val queryTimeout = Timeout(5 seconds)
+    case query: QueryProtocol.Query => supervisors foreach (_ ! query)
 
-        val resultListFutures: Iterable[Future[QueryResult]] = supervisors.map(
-          supervisor => (supervisor ? query).mapTo[QueryResult])
-
-        //This is highly inefficient. With multiple result sources, an alternative approach is needed.
-        resultListFutures foreach (result => result pipeTo sender)
-      }
-    }
-
-    case AddSupervisor(id, props) => supervisors = context.actorOf(props, id) :: supervisors
-    case RemoveSupervisor(id) => context.child(id) foreach {
-      child =>
-        supervisors = supervisors.filterNot(supervisor => supervisor == child)
-        child ! PoisonPill
-    }
+    case queryResult: QueryProtocol.QueryResult => writers foreach (_ ! queryResult)
   }
-}
 
-object QueryMasterProtocol {
-
-  case class AddSupervisor(id: String, props: Props)
-
-  case class RemoveSupervisor(id: String)
-
-
-
+  def createActor(supervisorActorProps: Props): ActorRef = {
+    val newActor = context.actorOf(supervisorActorProps, supervisorActorProps.actorClass().getSimpleName + childIndex)
+    childIndex += 1
+    newActor
+  }
 }

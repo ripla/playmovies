@@ -8,7 +8,9 @@ import org.risto.playmovie.test.PlayMovieSpec
 import scala.util.Try
 
 /**
- * @author risto
+ * Spec for the backend actor composition
+ *
+ * @author Risto Yrjänä
  */
 class BackendSpec extends PlayMovieSpec("BackendSpec") {
 
@@ -18,9 +20,10 @@ class BackendSpec extends PlayMovieSpec("BackendSpec") {
 
     val message = """{"query":"matrix"}"""
 
-    val querySupervisors: List[(String, Props)] = List(MovieDbSupervisor.supervisorProps)
+    val supervisors = List(Props[MovieDbSupervisor])
+    val resultWriters = List(Props[ResultLoggingActor])
 
-    val queryMaster = system.actorOf(Props(new QueryMaster(querySupervisors)), "querymaster")
+    val queryMaster = system.actorOf(Props(new QueryMaster(supervisors, resultWriters)), "querymaster")
 
     val mqAdapter = system.actorOf(Props(new MessageQueueAdapter), "mqAdapter")
 

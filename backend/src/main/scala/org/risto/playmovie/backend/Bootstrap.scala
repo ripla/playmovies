@@ -1,9 +1,8 @@
 package org.risto.playmovie.backend
 
+import akka.actor.{ActorSystem, Props}
 import akka.kernel.Bootable
-import akka.actor.{Props, ActorSystem}
-import org.risto.playmovie.backend.imdb.ImdbSupervisor
-import org.risto.playmovie.backend.themoviedb.MovieDbSupervisor
+import org.risto.playmovie.backend.mockactors.{MockQueryActor, QueryEmittingActor}
 
 
 object Bootstrap {
@@ -11,26 +10,26 @@ object Bootstrap {
 }
 
 /**
- * Created with IntelliJ IDEA.
- * User: Risto Yrjänä
- * Date: 17.8.2013
- * Time: 20.12
+ * Main class to run when starting the backend
  */
 class Bootstrap extends Bootable {
 
   val system = ActorSystem("playmovie-backend-kernel")
 
   def startup() {
-    //TODO read config
+    //TODO read config and pass it on
     //TODO get actors from config
+    //val supervisors = List(Props[MovieDbSupervisor])
+    val supervisors = List(Props[MockQueryActor])
+    val resultWriters = List(Props[ResultLoggingActor])
 
-    val querySupervisors: List[(String, Props)] = List(MovieDbSupervisor.supervisorProps)
+    val queryMaster = system.actorOf(Props(new QueryMaster(supervisors, resultWriters)), "querymaster")
 
-    val queryMaster = system.actorOf(Props(new QueryMaster(querySupervisors)), "querymaster")
+    //val mqAdapter = system.actorOf(Props(new MessageQueueAdapter), "mqAdapter")
 
-    val mqAdapter = system.actorOf(Props(new MessageQueueAdapter), "mqAdapter")
+    //system.actorOf(Props(new QueryMqAdapter(queryMaster, mqAdapter)), "queryAdapter")
 
-    system.actorOf(Props(new QueryMqAdapter(queryMaster, mqAdapter)), "queryAdapter")
+    system.actorOf(Props(new QueryEmittingActor(queryMaster)))
   }
 
   def shutdown() {

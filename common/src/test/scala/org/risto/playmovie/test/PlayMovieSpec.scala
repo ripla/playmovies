@@ -1,15 +1,17 @@
 package org.risto.playmovie.test
 
+import org.risto.playmovie.common.QueryProtocol
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FlatSpec}
-import akka.testkit.{TestKit, TestKitBase}
-import akka.actor.{ActorRef, Actor, ActorSystem}
+import akka.testkit.{CallingThreadDispatcher, TestKit, TestKitBase}
+import akka.actor.{Props, ActorRef, Actor, ActorSystem}
 import org.scalatest.mock.MockitoSugar
+
+import scala.reflect.ClassTag
 
 /**
  * Class combining common functionality for all specifications
- * User: Risto Yrjänä
- * Date: 22.8.2013
- * Time: 18.07
+ *
+ * @author Risto Yrjänä
  */
 class PlayMovieSpec(specName: String) extends FlatSpec with BeforeAndAfterAll with BeforeAndAfter with TestKitBase with MockitoSugar{
 
@@ -23,9 +25,23 @@ class PlayMovieSpec(specName: String) extends FlatSpec with BeforeAndAfterAll wi
     TestKit.shutdownActorSystem(system)
   }
 
-  class ActorForwarder(target: ActorRef) extends Actor {
-    def receive = {
-      case msg => target forward msg
-    }
+  def singleThreadActor[T <: Actor: ClassTag](creator: ⇒ T): Props = Props(creator).withDispatcher(CallingThreadDispatcher.Id)
+}
+
+class ActorForwarder(target: ActorRef) extends Actor {
+  def receive = {
+    case msg => target forward msg
+  }
+}
+
+class NoopActor extends Actor {
+  def receive = {
+    case msg =>
+  }
+}
+
+class EchoActor(defaultResponse: Any) extends Actor {
+  def receive = {
+    case anyMessage => sender() ! defaultResponse
   }
 }

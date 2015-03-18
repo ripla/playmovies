@@ -1,18 +1,14 @@
 package org.risto.playmovie.backend
 
 import akka.actor._
-import com.typesafe.config.{ConfigValueFactory, ConfigFactory}
-
-import com.rabbitmq.client._
-import scala.collection.mutable.ListBuffer
 import akka.event.LoggingReceive
+import com.rabbitmq.client._
+import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
+import org.risto.playmovie.backend.MQAdapterProtocol.{Message, Register, SendMessage, UnRegister}
 import org.risto.playmovie.common.Global.Implicits._
+
+import scala.collection.mutable.ListBuffer
 import scala.util.Try
-import org.risto.playmovie.backend.MQAdapterProtocol.UnRegister
-import org.risto.playmovie.backend.MQAdapterProtocol.Register
-import org.risto.playmovie.backend.MQAdapterProtocol.Message
-import scala.Some
-import org.risto.playmovie.backend.MQAdapterProtocol.SendMessage
 
 /**
  * Messaging protocol for communicating with [[MessageQueueAdapter]]
@@ -26,6 +22,7 @@ object MQAdapterProtocol {
   case class Message(message: String, uuid: Option[String])
 
   case class SendMessage(message: String, uuid: Option[String])
+
 }
 
 object MessageQueueAdapter {
@@ -52,22 +49,6 @@ object MessageQueueAdapter {
  */
 class MessageQueueAdapter extends Actor with ActorLogging with Stash {
 
-  var messageListeners: ListBuffer[ActorRef] = ListBuffer.empty
-
-  var idReplyToQueue: Map[String, String] = Map.empty
-
-  var channel: Channel = _
-
-  override def preStart(): Unit = {
-    log.debug(s"${this.getClass.getSimpleName} prestart")
-    context.actorOf(Props(classOf[MessageQueueConnectionHandler], context.self))
-  }
-
-
-  override def postStop(): Unit = {
-    channel.close()
-  }
-
   /**
    * Common message handling (listener handling) for all states
    */
@@ -78,7 +59,6 @@ class MessageQueueAdapter extends Actor with ActorLogging with Stash {
     }
     case UnRegister(actor) => messageListeners -= actor
   }
-
   /**
    * While waiting for connection, we stash all messages. Once we get the connection, we unload the stash and switch
    * to normal behaviour. This doesn't handle losing the connection
@@ -96,8 +76,6 @@ class MessageQueueAdapter extends Actor with ActorLogging with Stash {
 
     case otherMessage => stash()
   }
-
-
   val handlingMessages: Receive = registrationHandling orElse
     LoggingReceive {
 
@@ -110,7 +88,6 @@ class MessageQueueAdapter extends Actor with ActorLogging with Stash {
         case SendMessage(message, None) => sendMessage(message)
       }
     }
-
   val consumer = new DefaultConsumer(channel) {
     override def handleDelivery(consumerTag: String, envelope: Envelope, properties: AMQP.BasicProperties, body: Array[Byte]) = {
       log.debug(s"Received AMQP message: $consumerTag, $envelope, $properties, $body")
@@ -132,15 +109,26 @@ class MessageQueueAdapter extends Actor with ActorLogging with Stash {
       self ! PoisonPill
     }
   }
+  var messageListeners: ListBuffer[ActorRef] = ListBuffer.empty
+  var idReplyToQueue: Map[String, String] = Map.empty
+  var channel: Channel = _
 
+  override def preStart(): Unit = {
+    log.debug(s"${this.getClass.getSimpleName} prestart")
+    context.actorOf(Props(classOf[MessageQueueConnectionHandler], context.self))
+  }
 
-  def getReplyQueue(id: String): String = idReplyToQueue.get(id) match {
-    case Some(replyToQueue) => replyToQueue
-    case None => throw new IllegalStateException(s"No replyToQueue found for message id $id")
+  override def postStop(): Unit = {
+    channel.close()
   }
 
   def sendReplyMessage(message: String, uuid: String): Unit = {
     channel.basicPublish("", getReplyQueue(uuid), MessageProperties.PERSISTENT_TEXT_PLAIN.builder().correlationId(uuid).build(), message.getBytes())
+  }
+
+  def getReplyQueue(id: String): String = idReplyToQueue.get(id) match {
+    case Some(replyToQueue) => replyToQueue
+    case None => throw new IllegalStateException(s"No replyToQueue found for message id $id")
   }
 
   def sendMessage(message: String): Unit = {

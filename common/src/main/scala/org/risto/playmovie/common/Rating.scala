@@ -1,10 +1,10 @@
 package org.risto.playmovie.common
 
 /**
- * User: Risto Yrjänä
- * Date: 16.8.2013
- * Time: 19.53
+ * Movie rating from 0 to 10
+ *
+ * @author Risto Yrjänä
  */
 case class Rating(rating: Int) {
-  if (rating <= 0 || rating > 10) throw new IllegalArgumentException(s"Illegal rating value $rating")
+  require((rating > 0 || rating <= 10), s"Illegal rating value $rating")
 }

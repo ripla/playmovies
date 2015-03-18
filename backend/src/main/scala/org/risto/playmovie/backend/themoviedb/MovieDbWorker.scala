@@ -1,20 +1,18 @@
 package org.risto.playmovie.backend.themoviedb
 
-import akka.actor.{ActorLogging, Actor}
+import akka.actor.{Actor, ActorLogging}
 import akka.pattern.pipe
-
-import scala.concurrent.Future
-
-import spray.http.ContentTypes.`application/json`
-import spray.json._
-import spray.client.pipelining._
-
 import com.netaporter.uri.dsl._
-import spray.http.{HttpEntity, HttpRequest, HttpResponse}
 import org.joda.time.DateTime
 import org.risto.playmovie.PlayMovieConfig
 import org.risto.playmovie.common.QueryProtocol
+import spray.client.pipelining._
+import spray.http.ContentTypes.`application/json`
+import spray.http.{HttpEntity, HttpRequest, HttpResponse}
 import spray.httpx.UnsuccessfulResponseException
+import spray.json._
+
+import scala.concurrent.Future
 
 
 object MovieDbProtocol {
@@ -31,7 +29,7 @@ import org.risto.playmovie.backend.themoviedb.MovieDbProtocol._
 
 object MovieDbJsonProtocol extends DefaultJsonProtocol {
 
-  implicit object ColorJsonFormat extends RootJsonFormat[Option[DateTime]] {
+  implicit object DateTimeJsonFormat extends RootJsonFormat[Option[DateTime]] {
     val MovieDbDatePattern = """(\d{4})-(\d{2})-(\d{2})""".r
 
 
@@ -66,10 +64,9 @@ class MovieDbWorker extends Actor with ActorLogging {
 
   implicit val system = context.system
 
-  import system.dispatcher
-
   import org.risto.playmovie.backend.themoviedb.MovieDbJsonProtocol._
   import spray.httpx.SprayJsonSupport._
+  import system.dispatcher
 
   /*
   this is a bit non-intuitive, but since unmarshalling uses the content-type in the entity / response body,
@@ -109,7 +106,7 @@ class MovieDbWorker extends Actor with ActorLogging {
           log.error(s"Query $query failed with $otherFail.")
           QueryProtocol.Unknown
         }
-      } map{
+      } map {
         case MovieDbResponse(Some(Nil), code) => MovieDbResponse(None, code)
         case other => other
       } pipeTo sender

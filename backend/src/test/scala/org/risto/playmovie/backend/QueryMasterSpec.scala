@@ -1,65 +1,59 @@
 package org.risto.playmovie.backend
 
-import akka.actor.{ActorRef, Props, Actor, ActorSystem}
-import akka.testkit.TestActorRef
-import org.scalatest.BeforeAndAfterAll
-import org.risto.playmovie.backend.QueryMasterProtocol.{RemoveSupervisor, AddSupervisor}
-import org.risto.playmovie.test.PlayMovieSpec
-import org.risto.playmovie.common.QueryProtocol
+import akka.actor._
 import org.risto.playmovie.common.QueryProtocol.Query
-
+import org.risto.playmovie.common.{QueryProtocol, Rating}
+import org.risto.playmovie.test.{ActorForwarder, EchoActor, NoopActor, PlayMovieSpec}
 
 /**
- * User: Risto Yrjänä
- * Date: 8.8.2013
- * Time: 23.17
+ * Specification for [[QueryMaster]]
+ *
+ * @author Risto Yrjänä
  */
 class QueryMasterSpec extends PlayMovieSpec("QueryMasterSpec") {
 
-  class EchoActor extends Actor {
-    def receive = {
-      case msg => sender ! QueryProtocol.NotFound
-    }
-  }
+  val successMessage = QueryProtocol.Success("test", None, Rating(2), "testService", "42")
+  val notfoundMessage = QueryProtocol.NotFound("TestService", "42")
 
   behavior of "A QueryMaster"
 
   it should "forward queries to a configured QuerySupervisor" in {
-    val queryMasterParams = List(("testSupervisor", Props(new ActorForwarder(testActor))))
-    val queryMaster = system.actorOf(Props(new QueryMaster(queryMasterParams)))
+    val querySupervisors = List(Props(new ActorForwarder(testActor)))
+    val resultWriters = List(Props[NoopActor])
+    val queryMaster = system.actorOf(Props(new QueryMaster(querySupervisors, resultWriters)))
 
-    queryMaster ! Query("test1","123")
-    expectMsg(Query("test1","123"))
+    queryMaster ! Query("test1", "123")
+    expectMsg(Query("test1", "123"))
 
-    queryMaster ! Query("test2","123")
-    expectMsg(Query("test2","123"))
+    queryMaster ! Query("test2", "123")
+    expectMsg(Query("test2", "123"))
   }
 
-  it should "return the results from a QuerySupervisor" in {
-    val queryMasterParams = List(("testSupervisor", Props(new EchoActor)))
+  it should "forward the results to result writer" in {
+    val querySupervisors = List(Props[NoopActor])
+    val resultWriters = List(Props(new ActorForwarder(testActor)))
+    val queryMaster = system.actorOf(Props(new QueryMaster(querySupervisors, resultWriters)))
 
-    val queryMaster = system.actorOf(Props(new QueryMaster(queryMasterParams)))
+    queryMaster ! notfoundMessage
+    expectMsg(notfoundMessage)
 
-    queryMaster ! Query("test","123")
-    expectMsg(List(QueryProtocol.NotFound))
+    queryMaster ! successMessage
+    expectMsg(successMessage)
   }
 
-  it should "allow adding supervisors with messages" in {
-    val queryMaster = TestActorRef[QueryMaster]
+  it should "work with multiple query and result actors" in {
+    //needs to be single threaded execution
+    //otherwise message order would not be consistent
+    val querySupervisors = List(singleThreadActor(new EchoActor(notfoundMessage)), singleThreadActor(new EchoActor(successMessage)))
+    val resultWriters = List(singleThreadActor(new ActorForwarder(testActor)), singleThreadActor(new ActorForwarder(testActor)))
+    val queryMaster = system.actorOf(singleThreadActor(new QueryMaster(querySupervisors, resultWriters)))
 
-    queryMaster.underlyingActor.supervisors.isEmpty
+    queryMaster ! Query("test1", "123")
 
-    queryMaster ! AddSupervisor("test", Props(new ActorForwarder(testActor)))
-
-    queryMaster.underlyingActor.supervisors.size == 1
-  }
-
-  it should "allow removing supervisors with messages" in {
-    val queryMaster = TestActorRef[QueryMaster]
-
-    queryMaster ! AddSupervisor("test", Props(new ActorForwarder(testActor)))
-    queryMaster ! RemoveSupervisor("test")
-
-    queryMaster.underlyingActor.supervisors.isEmpty
+    expectMsg(notfoundMessage)
+    expectMsg(notfoundMessage)
+    expectMsg(successMessage)
+    expectMsg(successMessage)
   }
 }
+

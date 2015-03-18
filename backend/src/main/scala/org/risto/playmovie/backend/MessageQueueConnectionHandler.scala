@@ -1,10 +1,11 @@
 package org.risto.playmovie.backend
 
-import scala.util.{Failure, Success, Try}
-import com.rabbitmq.client.{ConnectionFactory, Channel}
-import com.typesafe.config.{ConfigValueFactory, ConfigFactory}
-import akka.actor.{ActorLogging, Cancellable, ActorRef, Actor}
+import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable}
+import com.rabbitmq.client.{Channel, ConnectionFactory}
+import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
+
 import scala.concurrent.duration._
+import scala.util.{Failure, Success, Try}
 
 
 /**
@@ -37,12 +38,6 @@ class MessageQueueConnectionHandler(connectionUser: ActorRef) extends Actor with
 
   override def preStart(): Unit = tryConnection()
 
-  override def postStop(): Unit = cancellable foreach (_.cancel())
-
-  def receive = {
-    case MessageQueueConnectionHandler.GetConnection => tryConnection()
-  }
-
   def tryConnection(): Unit = {
     MessageQueueConnectionHandler.createQueryChannel() match {
       case Success(channel) => {
@@ -55,5 +50,11 @@ class MessageQueueConnectionHandler(connectionUser: ActorRef) extends Actor with
         cancellable = Some(context.system.scheduler.scheduleOnce(500 milliseconds, self, MessageQueueConnectionHandler.GetConnection))
       }
     }
+  }
+
+  override def postStop(): Unit = cancellable foreach (_.cancel())
+
+  def receive = {
+    case MessageQueueConnectionHandler.GetConnection => tryConnection()
   }
 }
